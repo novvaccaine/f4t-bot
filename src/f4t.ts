@@ -25,6 +25,7 @@ export class F4T extends EventEmitter {
       this.page,
       ".ant-layout-header .ant-dropdown-trigger",
     );
+    this.listenOnConsole();
   }
 
   async joinRoom(url: string) {
@@ -41,12 +42,10 @@ export class F4T extends EventEmitter {
 
     await this.page.getByText("Click on anywhere to start").click();
 
-    await this.registerObserver();
-
     // wait for participants to be connected
     await waitFor(7.5);
 
-    this.listenOnConsole();
+    await this.registerObserver();
   }
 
   async listenOnConsole() {

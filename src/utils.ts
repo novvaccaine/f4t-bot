@@ -56,3 +56,13 @@ ${content}
 </recent_message>
 `;
 }
+
+export function debounce(func: (...args: any) => any, timeout = 3) {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args: any) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      func.apply(this, args);
+    }, timeout * 1000);
+  };
+}
