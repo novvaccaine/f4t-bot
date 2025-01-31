@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "node --env-file=.env dist/index.js"
+    "dev": "node --env-file=.env dist/index.js",
     "dev": "node dist/index.js"
   },
   "devDependencies": {
