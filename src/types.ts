@@ -36,7 +36,7 @@ export type F4TConfig =
       mode: "bot";
       spec: {
         prompt: string;
-        reply: true;
+        reply: boolean;
         languages?: string[];
         roomID?: string;
       };

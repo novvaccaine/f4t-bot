@@ -16,11 +16,11 @@ export async function waitFor(seconds: number) {
 
 export function filterRoom(room: Room, languages?: string[]) {
   const unlimitedParticipantsRoom =
-    room.maxPeople === 0 && room.clients.length > 0;
+    room.maxPeople === 0 && room.clients.length > 1;
 
   const limitedParticipantsRoom =
     room.maxPeople > 0 &&
-    room.clients.length > 0 &&
+    room.clients.length > 1 &&
     room.clients.length < room.maxPeople;
 
   const languagesFilter = languages

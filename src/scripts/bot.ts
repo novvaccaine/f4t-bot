@@ -32,7 +32,7 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
   );
 
   try {
-    f4t.once("message", async (event: F4TMessage) => {
+    f4t.on("message", async (event: F4TMessage) => {
       console.log(event);
       if (event.username === config.f4t.username || !options.reply) {
         return;
