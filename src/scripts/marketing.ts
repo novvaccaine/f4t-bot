@@ -9,16 +9,18 @@ type MarketingOptions = {
 export async function marketing(f4t: F4T, options: MarketingOptions) {
   const { languages, message } = options;
   const visitedRooms = new Set();
+  let visitSkipCount = 0;
 
   while (true) {
-    if (visitedRooms.size > 100) {
-      console.log("visited rooms max limit exceeded");
+    if (visitSkipCount >= 25) {
+      visitSkipCount = 0;
       visitedRooms.clear();
     }
 
     const room = await f4t.getRandomRoom((room) => filterRoom(room, languages));
     if (visitedRooms.has(room.url)) {
       console.log("skipping visited room:", room.url);
+      visitSkipCount++;
       continue;
     }
 

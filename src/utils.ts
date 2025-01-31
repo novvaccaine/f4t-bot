@@ -31,13 +31,21 @@ export async function waitFor(seconds: number) {
 }
 
 export function filterRoom(room: Room, languages?: string[]) {
+  const unlimitedParticipantsRoom =
+    room.maxPeople === 0 && room.clients.length > 0;
+
+  const limitedParticipantsRoom =
+    room.maxPeople > 0 &&
+    room.clients.length > 0 &&
+    room.clients.length < room.maxPeople;
+
+  const languagesFilter = languages
+    ? languages.includes(room.language.toLowerCase()) ||
+      languages.includes(room.secondLanguage?.toLowerCase())
+    : true;
+
   return (
-    ((!room.maxPeople && room.clients.length > 0) ||
-      (room.maxPeople > 0 &&
-        room.clients.length > 0 &&
-        room.clients.length < room.maxPeople)) &&
-    ((languages?.length && languages.includes(room.language.toLowerCase())) ||
-      languages.includes(room.secondLanguage.toLowerCase()))
+    (unlimitedParticipantsRoom || limitedParticipantsRoom) && languagesFilter
   );
 }
 
