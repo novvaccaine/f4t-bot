@@ -6,22 +6,6 @@ export async function waitForSelector(page: Page, selector: string) {
   await page.waitForSelector(selector, { timeout: 600000 });
 }
 
-export async function waitForSelectors(
-  page: Page,
-  selectors: Record<string, string>,
-) {
-  const promises = Object.entries(selectors).map(([key, selector]) =>
-    waitForSelector(page, selector).then(() => key),
-  );
-
-  try {
-    const key = await Promise.race(promises);
-    return key;
-  } catch (error) {
-    throw new Error(`failed to find any selectors`);
-  }
-}
-
 export async function waitFor(seconds: number) {
   return new Promise((res) => {
     setTimeout(() => {

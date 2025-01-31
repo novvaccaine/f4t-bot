@@ -1,5 +1,6 @@
 import { F4T } from "../f4t.js";
 import { filterRoom, waitFor } from "../utils.js";
+import { RoomExit } from "../types.js";
 
 type MarketingOptions = {
   message: string;
@@ -18,19 +19,29 @@ export async function marketing(f4t: F4T, options: MarketingOptions) {
     }
 
     const room = await f4t.getRandomRoom((room) => filterRoom(room, languages));
-    if (visitedRooms.has(room.url)) {
-      console.log("skipping visited room:", room.url);
+    if (visitedRooms.has(room)) {
+      console.log("skipping visited room:", room);
       visitSkipCount++;
       continue;
     }
 
     try {
-      await f4t.joinRoom(room.url);
-      console.log("joined room", room.url);
+      await Promise.race([
+        f4t.joinRoom(room),
+        new Promise((_, reject) => {
+          f4t.once("roomExit", (event: RoomExit) => {
+            visitedRooms.add(event.room);
+            reject(new Error("room exit happened"));
+          });
+        }),
+      ]);
+      console.log("joined room", room);
       await f4t.sendMessage(message);
-      visitedRooms.add(room.url);
+      visitedRooms.add(room);
     } catch (err) {
-      console.log("error:", err);
+      if (err instanceof Error) {
+        console.log("error:", err.message);
+      }
     } finally {
       await waitFor(2.5);
     }

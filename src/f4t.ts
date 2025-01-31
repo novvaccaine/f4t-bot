@@ -1,7 +1,7 @@
 import { chromium, Page } from "playwright";
 import { config } from "./config.js";
-import { nhm, waitFor, waitForSelector, waitForSelectors } from "./utils.js";
-import { Room } from "./types.js";
+import { nhm, waitFor, waitForSelector } from "./utils.js";
+import { Event, Room } from "./types.js";
 import { EventEmitter } from "events";
 
 export class F4T extends EventEmitter {
@@ -31,31 +31,54 @@ export class F4T extends EventEmitter {
   async joinRoom(url: string) {
     await this.page.goto(url);
 
-    const key = await waitForSelectors(this.page, {
-      success: 'img[src^="https://lh3.googleusercontent.com"]',
-      fail: ".ant-result",
-    });
+    this.detectIfInRoom();
 
-    if (key === "fail") {
-      throw new Error("failed to join room");
-    }
-
+    await waitForSelector(
+      this.page,
+      'img[src^="https://lh3.googleusercontent.com"]',
+    );
     await this.page.getByText("Click on anywhere to start").click();
 
     // wait for participants to be connected
     await waitFor(7.5);
 
-    await this.registerObserver();
+    // listen for new messages
+    this.registerObserver();
+  }
+
+  async detectIfInRoom() {
+    this.page.evaluate(() => {
+      const observer = new MutationObserver(() => {
+        const element = document.querySelector(".ant-result .ant-result-title");
+        if (!element) {
+          return;
+        }
+        observer.disconnect();
+        const message = JSON.stringify({
+          name: "roomExit",
+          payload: {
+            room: window.location.href.split("?")[0],
+          },
+        });
+        console.log(message);
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    });
   }
 
   async listenOnConsole() {
     this.page.on("console", async (message) => {
       try {
-        const event = JSON.parse(message.text());
-        if (event.eventName === "newMessage") {
-          const { msg, username } = event.payload;
-          const md = nhm.translate(msg);
+        const event: Event = JSON.parse(message.text());
+        if (event.name === "newMessage") {
+          const { content, username } = event.payload;
+          const md = nhm.translate(content);
           this.emit("message", { content: md, username });
+        } else if (event.name === "roomExit") {
+          this.emit("roomExit", event.payload);
         }
       } catch (err) {}
     });
@@ -78,9 +101,9 @@ export class F4T extends EventEmitter {
                 );
                 if (systemMessage instanceof HTMLSpanElement) {
                   const message = JSON.stringify({
-                    eventName: "newMessage",
+                    name: "newMessage",
                     payload: {
-                      msg: systemMessage.innerText,
+                      content: systemMessage.innerText,
                       username: "F4T Notification",
                     },
                   });
@@ -97,11 +120,11 @@ export class F4T extends EventEmitter {
                 const htmlNode = htmlNodes.at(-1);
                 const username =
                   node.querySelector(".user .name span")?.textContent;
-                const msg = htmlNode.innerHTML;
+                const content = htmlNode.innerHTML;
                 const message = JSON.stringify({
-                  eventName: "newMessage",
+                  name: "newMessage",
                   payload: {
-                    msg,
+                    content,
                     username,
                   },
                 });
@@ -139,6 +162,6 @@ export class F4T extends EventEmitter {
     }
 
     const randomIndex = Math.floor(Math.random() * filteredRooms.length);
-    return filteredRooms[randomIndex];
+    return filteredRooms[randomIndex].url;
   }
 }
