@@ -24,7 +24,8 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
     async (content: string, messages: F4TMessage[]) => {
       try {
         const reply = await ai.response(getQuery(content, messages));
-        f4t.sendMessage(reply);
+        await f4t.sendMessage(reply);
+        messages.push({ content: reply, username: config.f4t.username });
       } catch (err) {
         console.error("error: reply with ai:", err);
       }
@@ -33,7 +34,7 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
 
   try {
     await f4t.joinRoom(defaultRoom ?? room.url);
-    console.log("joined room", room.url);
+    console.log("joined room", defaultRoom ?? room.url);
 
     f4t.on("message", async (event: F4TMessage) => {
       console.log(event);
