@@ -25,14 +25,12 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
     console.log("joined room", room.url);
 
     f4t.on("message", async (event: F4TMessage) => {
+      console.log(event);
       if (event.username === config.f4t.username) {
         return;
       }
       try {
         const reply = await ai.response(getQuery(event.content, messages));
-
-        // TODO: replace think
-
         f4t.sendMessage(reply);
       } catch (err) {
       } finally {
