@@ -1,7 +1,7 @@
 import { config } from "../config.js";
 import { F4T } from "../f4t.js";
 import { AI } from "../groq.js";
-import { F4TMessage, RoomExit } from "../types.js";
+import { F4TMessage } from "../types.js";
 import { debounce, filterRoom, getQuery, waitFor } from "../utils.js";
 
 const MAX_MESSAGES_COUNT = 25;
@@ -15,9 +15,25 @@ type BotOptions = {
 export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
   let messages: F4TMessage[] = [];
 
-  const room = options.roomID
-    ? `${config.f4t.url}/room/${options.roomID}`
-    : await f4t.getRandomRoom((room) => filterRoom(room, options.languages));
+  let room = `${config.f4t.url}/room/${options.roomID}`;
+  if (!options.roomID) {
+    let rooms = await f4t.getRooms();
+    rooms = rooms.filter((room) => filterRoom(room, options.languages));
+    const idx = Math.floor(Math.random() * rooms.length);
+    room = rooms[idx].url;
+  }
+
+  f4t.on("message", async (event: F4TMessage) => {
+    console.log(event);
+    if (event.username === config.f4t.username || !options.reply) {
+      return;
+    }
+    replyWithAI(event.content, messages);
+    messages.push(event);
+    if (messages.length >= MAX_MESSAGES_COUNT) {
+      messages = messages.slice(-1 * MAX_MESSAGES_COUNT);
+    }
+  });
 
   const replyWithAI = debounce(
     async (content: string, messages: F4TMessage[]) => {
@@ -32,17 +48,6 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
   );
 
   try {
-    f4t.on("message", async (event: F4TMessage) => {
-      console.log(event);
-      if (event.username === config.f4t.username || !options.reply) {
-        return;
-      }
-      replyWithAI(event.content, messages);
-      messages.push(event);
-      if (messages.length >= MAX_MESSAGES_COUNT) {
-        messages = messages.slice(-1 * MAX_MESSAGES_COUNT);
-      }
-    });
     await f4t.joinRoom(room);
     console.log("joined room", room);
   } catch (err) {

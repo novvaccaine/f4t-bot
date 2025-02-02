@@ -85,9 +85,7 @@ export class F4T extends EventEmitter {
   }
 
   async registerObserver() {
-    await this.page
-      .locator(".translate-container")
-      .waitFor({ state: "visible" });
+    await waitForSelector(this.page, ".translate-container");
 
     this.page.evaluate(() => {
       const container = document.querySelector(".translate-container");
@@ -144,24 +142,21 @@ export class F4T extends EventEmitter {
   async sendMessage(message: string) {
     await this.page.waitForSelector("textarea");
     await this.page.locator("textarea").fill(message);
-
     await this.page.locator(".input-send-box button[type='button']").click();
   }
 
-  async getRandomRoom(callback: (room: Room) => boolean) {
-    const rooms: Record<string, Room> = await this.page.evaluate(() => {
+  async getRooms() {
+    const groups: Record<string, Room> = await this.page.evaluate(() => {
       return JSON.parse(
         JSON.parse(JSON.stringify(localStorage))["groups:groupMap"],
       ).data;
     });
 
-    const filteredRooms = Object.values(rooms).filter(callback);
-
-    if (!filteredRooms.length) {
+    const rooms = Object.values(groups);
+    if (!rooms.length) {
       throw new Error("failed to find any rooms");
     }
 
-    const randomIndex = Math.floor(Math.random() * filteredRooms.length);
-    return filteredRooms[randomIndex].url;
+    return rooms;
   }
 }
