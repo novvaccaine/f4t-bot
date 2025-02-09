@@ -42,6 +42,15 @@ export class F4T extends EventEmitter {
     // wait for participants to be connected
     await waitFor(7.5);
 
+    // check if anyone is in room
+    const hasParticipants = await this.page.evaluate(() => {
+      const elements = Array.from(document.querySelectorAll(".bottom .name"));
+      return elements.length > 1;
+    });
+    if (!hasParticipants) {
+      throw new Error("no participants found in room");
+    }
+
     // listen for new messages
     this.registerObserver();
   }
@@ -49,15 +58,26 @@ export class F4T extends EventEmitter {
   async detectIfInRoom() {
     this.page.evaluate(() => {
       const observer = new MutationObserver(() => {
-        const element = document.querySelector(".ant-result .ant-result-title");
-        if (!element) {
+        const resultElement = document.querySelector(
+          ".ant-result .ant-result-title",
+        );
+        let banned = false;
+
+        const modal = document.querySelector(".ant-modal-body");
+        if (modal instanceof HTMLDivElement) {
+          banned = modal.innerText.includes("Banning reason");
+        }
+
+        if (!resultElement && !banned) {
           return;
         }
+
         observer.disconnect();
         const message = JSON.stringify({
           name: "roomExit",
           payload: {
             room: window.location.href.split("?")[0],
+            reason: banned ? "banned" : undefined,
           },
         });
         console.log(message);

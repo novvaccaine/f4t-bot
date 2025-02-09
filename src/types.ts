@@ -18,6 +18,7 @@ export type Event =
       name: "roomExit";
       payload: {
         room: string;
+        reason?: "banned";
       };
     };
 
@@ -38,7 +39,7 @@ export type F4TConfig =
         prompt: string;
         reply: boolean;
         languages?: string[];
-        roomID?: string;
+        roomURL: string;
       };
     };
 

@@ -1,58 +1,71 @@
 import { config } from "../config.js";
 import { F4T } from "../f4t.js";
 import { AI } from "../groq.js";
-import { F4TMessage } from "../types.js";
-import { debounce, filterRoom, getQuery, waitFor } from "../utils.js";
+import { F4TMessage, RoomExit } from "../types.js";
+import { debounce, getQuery } from "../utils.js";
 
 const MAX_MESSAGES_COUNT = 25;
 
 type BotOptions = {
   languages?: string[];
   reply: boolean;
-  roomID?: string;
+  roomURL: string;
+  timeout?: number;
 };
 
 export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
-  let messages: F4TMessage[] = [];
+  return new Promise(async (_, reject) => {
+    let messages: F4TMessage[] = [];
 
-  let room = `${config.f4t.url}/room/${options.roomID}`;
-  if (!options.roomID) {
-    let rooms = await f4t.getRooms();
-    rooms = rooms.filter((room) => filterRoom(room, options.languages));
-    const idx = Math.floor(Math.random() * rooms.length);
-    room = rooms[idx].url;
-  }
+    f4t.on("roomExit", async (event: RoomExit) => {
+      if (event.reason === "banned") {
+        console.log(
+          "bot mode: got banned at:",
+          new Date().toLocaleTimeString(),
+        );
+        process.exit();
+      }
+      reject("exited room");
+    });
 
-  f4t.on("message", async (event: F4TMessage) => {
-    console.log(event);
-    if (event.username === config.f4t.username || !options.reply) {
-      return;
-    }
-    replyWithAI(event.content, messages);
-    messages.push(event);
-    if (messages.length >= MAX_MESSAGES_COUNT) {
-      messages = messages.slice(-1 * MAX_MESSAGES_COUNT);
+    new Promise(() => {
+      setTimeout(
+        () => {
+          reject("room max time duration elapsed");
+        },
+        options.timeout ? options.timeout : 2.5 * 60 * 1000,
+      );
+    });
+
+    f4t.on("message", async (event: F4TMessage) => {
+      console.log(event);
+      if (event.username === config.f4t.username || !options.reply) {
+        return;
+      }
+      replyWithAI(event.content, messages);
+      messages.push(event);
+      if (messages.length >= MAX_MESSAGES_COUNT) {
+        messages = messages.slice(-1 * MAX_MESSAGES_COUNT);
+      }
+    });
+
+    const replyWithAI = debounce(
+      async (content: string, messages: F4TMessage[]) => {
+        try {
+          const reply = await ai.response(getQuery(content, messages));
+          await f4t.sendMessage(reply);
+          messages.push({ content: reply, username: config.f4t.username });
+        } catch (err) {
+          console.log("failed to send ai reply:", err);
+        }
+      },
+    );
+
+    try {
+      await f4t.joinRoom(options.roomURL);
+      console.log("joined room", options.roomURL);
+    } catch (err) {
+      reject(err);
     }
   });
-
-  const replyWithAI = debounce(
-    async (content: string, messages: F4TMessage[]) => {
-      try {
-        const reply = await ai.response(getQuery(content, messages));
-        await f4t.sendMessage(reply);
-        messages.push({ content: reply, username: config.f4t.username });
-      } catch (err) {
-        console.error("error: reply with ai:", err);
-      }
-    },
-  );
-
-  try {
-    await f4t.joinRoom(room);
-    console.log("joined room", room);
-  } catch (err) {
-    console.log("error:", err);
-  } finally {
-    await waitFor(2.5);
-  }
 }
