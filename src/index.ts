@@ -34,8 +34,9 @@ async function main() {
     headless: config.env === "prod",
   });
 
+  const ai = new AI(f4tConfig.spec.prompt);
+
   if (mode === "marketing") {
-    const ai = new AI(f4tConfig.spec.prompt);
     const visitedRooms = new Set<string>();
     let skipCount = 0;
 
@@ -46,9 +47,7 @@ async function main() {
       }
 
       let rooms = await f4t.getRooms();
-      rooms = rooms.filter((room) =>
-        filterRoom(room, f4tConfig.spec.languages),
-      );
+      rooms = rooms.filter((room) => filterRoom(room));
       const idx = getRandomIndex(rooms.length);
       const room = rooms[idx];
 
@@ -73,8 +72,7 @@ async function main() {
   }
 
   if (mode === "bot") {
-    await f4t.joinRoom(f4tConfig.spec.roomURL);
-    console.log("joined room", f4tConfig.spec.roomURL);
+    bot(f4t, ai, f4tConfig.spec);
   }
 }
 

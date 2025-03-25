@@ -39,7 +39,6 @@ export type F4TConfig =
       spec: {
         message: string;
         prompt: string;
-        languages?: string[];
       };
     }
   | {
@@ -50,7 +49,6 @@ export type F4TConfig =
       spec: {
         prompt: string;
         reply: boolean;
-        languages?: string[];
         roomURL: string;
       };
     };

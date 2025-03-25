@@ -10,7 +10,6 @@ type BotOptions = {
   languages?: string[];
   reply: boolean;
   roomURL: string;
-  timeout?: number;
 };
 
 export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
@@ -27,15 +26,6 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
       }
       reject("exited room");
     });
-
-    //new Promise(() => {
-    //  setTimeout(
-    //    () => {
-    //      reject("room max time duration elapsed");
-    //    },
-    //    options.timeout ? options.timeout : 2.5 * 60 * 1000,
-    //  );
-    //});
 
     f4t.on("message", async (event: F4TMessage) => {
       event.content = nhm.translate(event.content);

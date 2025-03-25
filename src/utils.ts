@@ -3,7 +3,7 @@ import { NodeHtmlMarkdown } from "node-html-markdown";
 import crypto from "crypto";
 import { config } from "./config.js";
 
-export function filterRoom(room: Room, languages?: string[]) {
+export function filterRoom(room: Room) {
   const unlimitedParticipantsRoom =
     room.maxPeople === 0 && room.clients.length > 1;
 
@@ -16,16 +16,7 @@ export function filterRoom(room: Room, languages?: string[]) {
     (client) => client.name === config.f4t.username,
   );
 
-  const languagesFilter = languages
-    ? languages.includes(room.language.toLowerCase()) ||
-      languages.includes(room.secondLanguage?.toLowerCase())
-    : true;
-
-  return (
-    !isAmInRoom &&
-    (unlimitedParticipantsRoom || limitedParticipantsRoom) &&
-    languagesFilter
-  );
+  return !isAmInRoom && (unlimitedParticipantsRoom || limitedParticipantsRoom);
 }
 
 export const nhm = new NodeHtmlMarkdown();
