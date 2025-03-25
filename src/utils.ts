@@ -1,18 +1,7 @@
-import { Page } from "playwright";
 import { F4TMessage, Room } from "./types.js";
 import { NodeHtmlMarkdown } from "node-html-markdown";
-
-export async function waitForSelector(page: Page, selector: string) {
-  await page.waitForSelector(selector, { timeout: 600000 });
-}
-
-export async function waitFor(seconds: number) {
-  return new Promise((res) => {
-    setTimeout(() => {
-      res("ok");
-    }, seconds * 1000);
-  });
-}
+import crypto from "crypto";
+import { config } from "./config.js";
 
 export function filterRoom(room: Room, languages?: string[]) {
   const unlimitedParticipantsRoom =
@@ -23,13 +12,19 @@ export function filterRoom(room: Room, languages?: string[]) {
     room.clients.length > 1 &&
     room.clients.length < room.maxPeople;
 
+  const isAmInRoom = room.clients.find(
+    (client) => client.name === config.f4t.username,
+  );
+
   const languagesFilter = languages
     ? languages.includes(room.language.toLowerCase()) ||
       languages.includes(room.secondLanguage?.toLowerCase())
     : true;
 
   return (
-    (unlimitedParticipantsRoom || limitedParticipantsRoom) && languagesFilter
+    !isAmInRoom &&
+    (unlimitedParticipantsRoom || limitedParticipantsRoom) &&
+    languagesFilter
   );
 }
 
@@ -57,4 +52,10 @@ export function debounce(func: (...args: any) => any, timeout = 3) {
       func.apply(this, args);
     }, timeout * 1000);
   };
+}
+
+export function getRandomIndex(length: number) {
+  const randomArray = new Uint32Array(1);
+  crypto.getRandomValues(randomArray);
+  return randomArray[0] % length;
 }

@@ -1,9 +1,20 @@
+export type Participant = {
+  id: string;
+  followers: number;
+  following: number;
+  friends: number;
+  name: string;
+  supporter: number;
+  isVerified: boolean;
+};
+
 export type Room = {
   maxPeople: number;
-  clients: any[];
+  clients: Participant[];
   url: string;
   language: string;
   secondLanguage?: string;
+  topic: string;
 };
 
 export type Event =
@@ -27,6 +38,7 @@ export type F4TConfig =
       mode: "marketing";
       spec: {
         message: string;
+        prompt: string;
         languages?: string[];
       };
     }

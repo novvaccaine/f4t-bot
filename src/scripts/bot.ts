@@ -1,8 +1,8 @@
 import { config } from "../config.js";
-import { F4T } from "../f4t.js";
+import { F4T } from "@kbski/f4t";
 import { AI } from "../groq.js";
 import { F4TMessage, RoomExit } from "../types.js";
-import { debounce, getQuery } from "../utils.js";
+import { debounce, getQuery, nhm } from "../utils.js";
 
 const MAX_MESSAGES_COUNT = 25;
 
@@ -28,18 +28,23 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
       reject("exited room");
     });
 
-    new Promise(() => {
-      setTimeout(
-        () => {
-          reject("room max time duration elapsed");
-        },
-        options.timeout ? options.timeout : 2.5 * 60 * 1000,
-      );
-    });
+    //new Promise(() => {
+    //  setTimeout(
+    //    () => {
+    //      reject("room max time duration elapsed");
+    //    },
+    //    options.timeout ? options.timeout : 2.5 * 60 * 1000,
+    //  );
+    //});
 
     f4t.on("message", async (event: F4TMessage) => {
+      event.content = nhm.translate(event.content);
       console.log(event);
-      if (event.username === config.f4t.username || !options.reply) {
+      if (
+        event.username === config.f4t.username ||
+        !options.reply ||
+        event.username === "F4T Notification"
+      ) {
         return;
       }
       replyWithAI(event.content, messages);

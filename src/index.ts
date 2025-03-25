@@ -1,12 +1,12 @@
 import yaml from "js-yaml";
 import fs from "node:fs";
 import { F4TConfig } from "./types.js";
-import { login } from "./scripts/login.js";
 import { marketing } from "./scripts/marketing.js";
 import { bot } from "./scripts/bot.js";
-import { F4T } from "./f4t.js";
+import { F4T, login, waitFor } from "@kbski/f4t";
 import { AI } from "./groq.js";
-import { filterRoom, waitFor } from "./utils.js";
+import { filterRoom, getRandomIndex } from "./utils.js";
+import { config } from "./config.js";
 
 async function main() {
   const path = "./f4t.yaml";
@@ -15,15 +15,28 @@ async function main() {
   const { mode } = f4tConfig;
 
   if (mode === "login") {
-    await login();
+    await login({
+      headless: false,
+      authFile: config.authFile,
+      email: config.f4t.email,
+      password: config.f4t.password,
+      loginURL: config.google.loginURL,
+      loginRedirectURL: config.google.loginRedirectURL,
+      f4tURL: config.f4t.url,
+    });
     process.exit();
   }
 
   const f4t = new F4T();
-  await f4t.init();
+  await f4t.init({
+    authFile: config.authFile,
+    f4tURL: config.f4t.url,
+    headless: config.env === "prod",
+  });
 
   if (mode === "marketing") {
-    const visitedRooms = new Set();
+    const ai = new AI(f4tConfig.spec.prompt);
+    const visitedRooms = new Set<string>();
     let skipCount = 0;
 
     while (true) {
@@ -36,56 +49,32 @@ async function main() {
       rooms = rooms.filter((room) =>
         filterRoom(room, f4tConfig.spec.languages),
       );
-      const idx = Math.floor(Math.random() * rooms.length);
-      const roomURL = rooms[idx].url;
+      const idx = getRandomIndex(rooms.length);
+      const room = rooms[idx];
 
-      if (visitedRooms.has(roomURL)) {
+      if (visitedRooms.has(room.url)) {
         skipCount++;
-        console.log("marketing mode: skipping visited room:", roomURL);
+        console.log("marketing mode: skipping visited room:", room.url);
         continue;
       }
 
       try {
-        await marketing(f4t, { ...f4tConfig.spec, roomURL });
+        await marketing(f4t, ai, { ...f4tConfig.spec, room });
       } catch (err) {
-        console.log("bot mode: error:", err.message);
-        f4t.removeAllListeners("roomExit");
+        console.log("marketing mode: error:", err.message);
       } finally {
-        visitedRooms.add(roomURL);
+        await waitFor(3);
+        await f4t.page.reload();
+        await waitFor(5);
+        visitedRooms.add(room.url);
+        f4t.removeAllListeners("roomExit");
       }
     }
   }
 
   if (mode === "bot") {
-    let recentRoom: string | null = null;
-    const ai = new AI(f4tConfig.spec.prompt);
-
-    while (true) {
-      if (!f4tConfig.spec.roomURL) {
-        let rooms = await f4t.getRooms();
-        rooms = rooms.filter((room) =>
-          filterRoom(room, f4tConfig.spec.languages),
-        );
-        const idx = Math.floor(Math.random() * rooms.length);
-        const roomURL = rooms[idx].url;
-        if (roomURL === recentRoom) {
-          continue;
-        }
-        recentRoom = roomURL;
-      } else {
-        recentRoom = f4tConfig.spec.roomURL;
-      }
-      try {
-        const options = {
-          ...f4tConfig.spec,
-          roomURL: recentRoom,
-        };
-        await bot(f4t, ai, options);
-      } catch (err) {
-        f4t.removeAllListeners("message");
-        f4t.removeAllListeners("roomExit");
-      }
-    }
+    await f4t.joinRoom(f4tConfig.spec.roomURL);
+    console.log("joined room", f4tConfig.spec.roomURL);
   }
 }
 
