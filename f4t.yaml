@@ -1,0 +1,8 @@
+mode: bot
+
+spec:
+  reply: true
+  prompt: |
+    <promp goes here>
+  message: |
+    <message goes here>
