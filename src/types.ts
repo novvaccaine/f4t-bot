@@ -19,39 +19,40 @@ export type Room = {
 
 export type Event =
   | {
-      name: "newMessage";
-      payload: {
-        content: string;
-        username: string;
-      };
-    }
-  | {
-      name: "roomExit";
-      payload: {
-        room: string;
-        reason?: "banned";
-      };
+    name: "newMessage";
+    payload: {
+      content: string;
+      username: string;
     };
+  }
+  | {
+    name: "roomExit";
+    payload: {
+      room: string;
+      reason?: "banned";
+    };
+  };
 
 export type F4TConfig =
   | {
-      mode: "marketing";
-      spec: {
-        message: string;
-        prompt: string;
-      };
-    }
-  | {
-      mode: "login";
-    }
-  | {
-      mode: "bot";
-      spec: {
-        prompt: string;
-        reply: boolean;
-        roomURL: string;
-      };
+    mode: "marketing";
+    spec: {
+      message: string;
+      prompt: string;
+      roomURL: string;
     };
+  }
+  | {
+    mode: "login";
+  }
+  | {
+    mode: "bot";
+    spec: {
+      prompt: string;
+      reply: boolean;
+      roomURL: string;
+    };
+  };
 
 type EventPayload<T extends Event["name"]> = Extract<
   Event,

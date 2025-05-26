@@ -16,7 +16,7 @@ export function filterRoom(room: Room) {
     (client) => client.name === config.f4t.username,
   );
 
-  return !isAmInRoom && (unlimitedParticipantsRoom || limitedParticipantsRoom);
+  return !isAmInRoom && (unlimitedParticipantsRoom || limitedParticipantsRoom)
 }
 
 export const nhm = new NodeHtmlMarkdown();

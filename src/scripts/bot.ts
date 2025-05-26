@@ -17,6 +17,7 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
     let messages: F4TMessage[] = [];
 
     f4t.on("roomExit", async (event: RoomExit) => {
+      console.log("roomExit", event.reason);
       if (event.reason === "banned") {
         console.log(
           "bot mode: got banned at:",
@@ -27,13 +28,18 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
       reject("exited room");
     });
 
+    setTimeout(() => {
+      reject("timeout");
+    }, 180_000);
+
     f4t.on("message", async (event: F4TMessage) => {
       event.content = nhm.translate(event.content);
       console.log(event);
       if (
         event.username === config.f4t.username ||
         !options.reply ||
-        event.username === "F4T Notification"
+        event.username === "F4T Notification" ||
+        event.content.toLowerCase().includes("blur this image")
       ) {
         return;
       }

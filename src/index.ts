@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
 import fs from "node:fs";
-import { F4TConfig } from "./types.js";
+import { F4TConfig, Room } from "./types.js";
 import { marketing } from "./scripts/marketing.js";
 import { bot } from "./scripts/bot.js";
 import { F4T, login, waitFor } from "@kbski/f4t";
@@ -35,11 +35,10 @@ async function main() {
   });
 
   const ai = new AI(f4tConfig.spec.prompt);
+  const visitedRooms = new Set<string>();
+  let skipCount = 0;
 
   if (mode === "marketing") {
-    const visitedRooms = new Set<string>();
-    let skipCount = 0;
-
     while (true) {
       if (skipCount >= 25) {
         skipCount = 0;
@@ -57,6 +56,10 @@ async function main() {
         continue;
       }
 
+      if (f4tConfig.spec.roomURL) {
+        room.url = f4tConfig.spec.roomURL;
+      }
+
       try {
         await marketing(f4t, ai, { ...f4tConfig.spec, room });
       } catch (err) {
@@ -72,7 +75,30 @@ async function main() {
   }
 
   if (mode === "bot") {
-    bot(f4t, ai, f4tConfig.spec);
+    while (true) {
+      if (skipCount >= 25) {
+        skipCount = 0;
+        visitedRooms.clear();
+      }
+      let room: Room;
+      try {
+        let rooms = await f4t.getRooms();
+        rooms = rooms.filter((room) => filterRoom(room));
+        const idx = getRandomIndex(rooms.length);
+        room = rooms[idx];
+        if (f4tConfig.spec.roomURL) {
+          room.url = f4tConfig.spec.roomURL;
+        }
+        await bot(f4t, ai, { ...f4tConfig.spec, roomURL: room.url });
+      } catch (err) {
+        await waitFor(3);
+        await f4t.page.reload();
+        await waitFor(5);
+        visitedRooms.add(room.url);
+        f4t.removeAllListeners("roomExit");
+        f4t.removeAllListeners("message");
+      }
+    }
   }
 }
 
