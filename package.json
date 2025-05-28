@@ -11,7 +11,7 @@
     "typescript": "^5.5.3"
   },
   "dependencies": {
-    "@cbski/f4t": "^0.0.10",
+    "@kbski/f4t": "^0.0.10",
     "groq-sdk": "^0.13.0",
     "js-yaml": "^4.1.0",
     "node-html-markdown": "^1.3.0",

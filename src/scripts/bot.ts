@@ -28,9 +28,9 @@ export async function bot(f4t: F4T, ai: AI, options: BotOptions) {
       reject("exited room");
     });
 
-    setTimeout(() => {
-      reject("timeout");
-    }, 180_000);
+    // setTimeout(() => {
+    //   reject("timeout");
+    // }, 180_000);
 
     f4t.on("message", async (event: F4TMessage) => {
       event.content = nhm.translate(event.content);
